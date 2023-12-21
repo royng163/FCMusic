@@ -20,12 +20,12 @@ async def on_ready():
 
 @bot.tree.command(name="play", description="Play the song from the URL")
 async def play(interaction: Interaction, url: str):
-    vc = interaction.user.voice.channel
-    player = await vc.connect()
-    ydl_opts = {'format': 'bestaudio/best'}
+    vChannel = interaction.user.voice.channel
+    vClient = await vChannel.connect()
+    ydl_opts = {'format': 'bestaudio/best', 'no-check-certificate': True}
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
         url2 = info['formats'][0]['url']
-        player.play(discord.FFmpegPCMAudio(url2))
+        vClient.play(discord.FFmpegPCMAudio(url2))
 
 bot.run('NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI')
