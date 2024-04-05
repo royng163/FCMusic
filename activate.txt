@@ -1,0 +1,7 @@
+ssh -i C:\Users\Roy\.ssh\gcloud -t ncfcroy@35.197.99.182 'cd /home/ncfcroy/fcmusic/ ; bash'
+source discord/bin/activate
+nohup python3 -u bot.py &>> activity.log &
+ps aux |grep python3
+sudo systemctl daemon-reload
+sudo systemctl enable lavalink
+sudo systemctl start lavalink
