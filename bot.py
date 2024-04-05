@@ -1,7 +1,11 @@
+import asyncio
+import os
+import sys
+import threading
 import discord
 from discord.ext import commands
 from discord import Interaction
-import youtube_dl
+import wavelink
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -12,20 +16,141 @@ bot = commands.Bot(command_prefix='!',intents=intents)
 async def on_ready():
     print(f'Logged on as {bot.user}')
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
-    try:
-        synced = await bot.tree.sync()
-        print(f'Synced {len(synced)} commands')
-    except Exception as e:
-        print(e)
+    synced = await bot.tree.sync()
+    print(f'Synced {len(synced)} commands')
+    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
+    await wavelink.Pool.connect(nodes=[node], client=bot)
 
-@bot.tree.command(name="play", description="Play the song from the URL")
-async def play(interaction: Interaction, url: str):
+@bot.event
+async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
+    print(f"Node {payload.node.identifier} is ready!")
+
+@bot.tree.command(name="play", description="Play the song")
+async def play(interaction: Interaction, url: str=None):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (url is None):
+        if (vClient is None):
+            await interaction.followup.send("I am not in a voice channel")
+            return
+        if (not vClient.paused):
+            await interaction.followup.send("Song is already playing")
+            return
+        elif(vClient.paused):
+            await vClient.pause(False)
+            await interaction.followup.send("Song resumed")
+            return
+        else:
+            await interaction.followup.send("No song is playing")
+            return
+
+    if (interaction.user.voice is None): # check if user is in vc
+        await interaction.followup.send("You are not in a voice channel")
+        return
     vChannel = interaction.user.voice.channel
-    vClient = await vChannel.connect()
-    ydl_opts = {'format': 'bestaudio/best', 'no-check-certificate': True}
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        url2 = info['formats'][0]['url']
-        vClient.play(discord.FFmpegPCMAudio(url2))
 
-bot.run('NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI')
+    if (vClient is None): # check if bot is in vc
+        vClient = await vChannel.connect(cls=wavelink.Player)
+        await interaction.guild.change_voice_state(channel=vChannel, self_deaf=True)
+
+    if (vClient.channel is not vChannel): # check if the bot is in the same voice channel as user
+        vClient = await vClient.move_to(vChannel)
+
+    try:
+        tracks = await wavelink.Playable.search(url)
+        if isinstance(tracks, wavelink.Playlist):
+            added = await vClient.queue.put_wait(tracks)
+            await interaction.followup.send(f"Added {added} songs from **`{tracks.name}`** to the queue.")
+        else:
+            track = tracks[0]
+            await vClient.queue.put_wait(track)
+            await interaction.followup.send(f"Added `{track}` to the queue.")
+
+        if not vClient.playing:
+            track = vClient.queue.get()
+            await vClient.play(track)
+            vClient.autoplay = wavelink.AutoPlayMode.partial
+    except wavelink.LavalinkLoadException as e:
+        print(f"{e}")
+        await interaction.followup.send("Failed to load track.")
+
+
+@bot.tree.command(name="pause", description="Pause the song")
+async def pause(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel")
+        return
+    if (vClient.paused):
+        await interaction.followup.send("Song is already paused")
+        return
+    elif (not vClient.paused):
+        await vClient.pause(True)
+        await interaction.followup.send("Song paused")
+        return
+    else:
+        await interaction.followup.send("No song is playing")
+
+@bot.tree.command(name="queue", description="Display the queue")
+async def queue(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel")
+        return
+    if (vClient.queue.is_empty):
+        await interaction.followup.send("Queue is empty")
+        return
+    else:
+        queue = vClient.queue
+        queue_list = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(queue)])
+        await interaction.followup.send(f"Current Queue:\n{queue_list}")
+
+@bot.tree.command(name="skip", description="Skip the song")
+async def skip(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel")
+        return
+    if (vClient.playing):
+        await vClient.skip()
+        await interaction.followup.send("Song skipped")
+        return
+    else:
+        await interaction.followup.send("No song is playing")
+
+@bot.tree.command(name="shuffle", description="Shuffle the queue")
+async def shuffle(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel")
+        return
+    else:
+        vClient.queue.shuffle()
+        await interaction.followup.send("Queue shuffled")
+
+@bot.tree.command(name="stop", description="Terminate the player")
+async def stop(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("No active player")
+        return
+    else:
+        await vClient.disconnect()
+        await interaction.followup.send("Player Terminated")
+
+async def main():
+    async with bot:
+        await bot.start("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
+
+asyncio.run(main())
