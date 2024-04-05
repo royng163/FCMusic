@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import discord
 from discord.ext import commands
 from discord import Interaction
@@ -29,21 +30,21 @@ async def play(interaction: Interaction, url: str=None):
 
     if (url is None):
         if (vClient is None):
-            await interaction.followup.send("I am not in a voice channel")
+            await interaction.followup.send("I am not in a voice channel.")
             return
         if (not vClient.paused):
-            await interaction.followup.send("Song is already playing")
+            await interaction.followup.send("Song is already playing.")
             return
         elif(vClient.paused):
             await vClient.pause(False)
-            await interaction.followup.send("Song resumed")
+            await interaction.followup.send("Song resumed.")
             return
         else:
-            await interaction.followup.send("No song is playing")
+            await interaction.followup.send("No song is playing.")
             return
 
     if (interaction.user.voice is None): # check if user is in vc
-        await interaction.followup.send("You are not in a voice channel")
+        await interaction.followup.send("You are not in a voice channel.")
         return
     vChannel = interaction.user.voice.channel
 
@@ -79,17 +80,17 @@ async def pause(interaction: Interaction):
     vClient = interaction.guild.voice_client
 
     if (vClient is None):
-        await interaction.followup.send("I am not in a voice channel")
+        await interaction.followup.send("I am not in a voice channel.")
         return
     if (vClient.paused):
-        await interaction.followup.send("Song is already paused")
+        await interaction.followup.send("Song is already paused.")
         return
     elif (not vClient.paused):
         await vClient.pause(True)
-        await interaction.followup.send("Song paused")
+        await interaction.followup.send("Song paused.")
         return
     else:
-        await interaction.followup.send("No song is playing")
+        await interaction.followup.send("No song is playing.")
 
 @bot.tree.command(name="queue", description="Display the queue")
 async def queue(interaction: Interaction):
@@ -97,15 +98,37 @@ async def queue(interaction: Interaction):
     vClient = interaction.guild.voice_client
 
     if (vClient is None):
-        await interaction.followup.send("I am not in a voice channel")
+        await interaction.followup.send("I am not in a voice channel.")
         return
     if (vClient.queue.is_empty):
-        await interaction.followup.send("Queue is empty")
+        await interaction.followup.send("Queue is empty.")
         return
     else:
-        queue = vClient.queue
-        queue_list = "\n".join([f"{i+1}. {str(track)}" for i, track in enumerate(queue)])
-        await interaction.followup.send(f"Current Queue:\n{queue_list}")
+        queue_list = ""
+        for i, track in enumerate(vClient.queue[:10]):
+            queue_list += f"{i+1}. [{track}]({track.uri}) - `{datetime.fromtimestamp(track.length/1000).strftime('%Mm%Ss')}`\n"
+        embed = discord.Embed(title="Queue", color=0x22a7f2)
+        embed.add_field(name="", value=queue_list, inline=False)
+        await interaction.followup.send(embed=embed)
+
+@bot.tree.command(name="nowplaying", description="Display the current song")
+async def nowplaying(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel.")
+        return
+    if (not vClient.playing):
+        await interaction.followup.send("No song is playing.")
+        return
+    else:
+        track = vClient.queue.current
+        embed=discord.Embed(title="Now Playing", color=0x22a7f2)
+        embed.add_field(name=f"[{track}]({track.uri})",
+                        value=f"`{datetime.fromtimestamp(track.position/1000).strftime('%Mm%Ss')}/{datetime.fromtimestamp(track.length/1000).strftime('%Mm%Ss')}`",
+                        inline=False)
+        await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="skip", description="Skip the song")
 async def skip(interaction: Interaction):
@@ -113,14 +136,14 @@ async def skip(interaction: Interaction):
     vClient = interaction.guild.voice_client
 
     if (vClient is None):
-        await interaction.followup.send("I am not in a voice channel")
+        await interaction.followup.send("I am not in a voice channel.")
         return
     if (vClient.playing):
         await vClient.skip()
-        await interaction.followup.send("Song skipped")
+        await interaction.followup.send("Song skipped.")
         return
     else:
-        await interaction.followup.send("No song is playing")
+        await interaction.followup.send("No song is playing.")
 
 @bot.tree.command(name="shuffle", description="Shuffle the queue")
 async def shuffle(interaction: Interaction):
@@ -128,11 +151,11 @@ async def shuffle(interaction: Interaction):
     vClient = interaction.guild.voice_client
 
     if (vClient is None):
-        await interaction.followup.send("I am not in a voice channel")
+        await interaction.followup.send("I am not in a voice channel.")
         return
     else:
         vClient.queue.shuffle()
-        await interaction.followup.send("Queue shuffled")
+        await interaction.followup.send("Queue shuffled.")
 
 @bot.tree.command(name="stop", description="Terminate the player")
 async def stop(interaction: Interaction):
@@ -140,11 +163,11 @@ async def stop(interaction: Interaction):
     vClient = interaction.guild.voice_client
 
     if (vClient is None):
-        await interaction.followup.send("No active player")
+        await interaction.followup.send("No active player.")
         return
     else:
         await vClient.disconnect()
-        await interaction.followup.send("Player Terminated")
+        await interaction.followup.send("Player Terminated.")
 
 async def main():
     async with bot:
