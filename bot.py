@@ -157,6 +157,36 @@ async def shuffle(interaction: Interaction):
         vClient.queue.shuffle()
         await interaction.followup.send("Queue shuffled.")
 
+@bot.tree.command(name="clear", description="Clear the queue")
+async def clear(interaction: Interaction):
+    await interaction.response.defer()
+    vClient = interaction.guild.voice_client
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel.")
+        return
+    else:
+        vClient.queue.clear()
+        await interaction.followup.send("Queue cleared.")
+
+@bot.tree.command(name="playlist", description="Display updated playlist")
+async def playlist(interaction: Interaction, url: str):
+    await interaction.response.defer()
+
+    try:
+        playlist = await wavelink.Playable.search(url)
+        if isinstance(playlist, wavelink.Playlist):
+            embed = discord.Embed(title=f"[{playlist.name}]({playlist.url})", color=0x22a7f2)
+            embed.set_thumbnail(url=playlist.artwork)
+            await interaction.followup.send(embed=embed)
+        else:
+            await interaction.followup.send(f"Please provide a valid playlist URL.")
+    except wavelink.LavalinkLoadException as e:
+        print(f"{e}")
+        await interaction.followup.send("Failed to load track.")
+
+    await interaction.delete_original_message()
+
 @bot.tree.command(name="stop", description="Terminate the player")
 async def stop(interaction: Interaction):
     await interaction.response.defer()
