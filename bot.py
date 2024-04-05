@@ -1,7 +1,4 @@
 import asyncio
-import os
-import sys
-import threading
 import discord
 from discord.ext import commands
 from discord import Interaction
