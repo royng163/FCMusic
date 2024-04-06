@@ -176,7 +176,7 @@ async def playlist(interaction: Interaction, url: str):
         playlist = await wavelink.Playable.search(url)
         if isinstance(playlist, wavelink.Playlist):
             embed = discord.Embed(title=f"{playlist.name}", url=playlist.url, color=0x22a7f2)
-            embed.set_thumbnail(url=playlist.url)
+            embed.set_thumbnail(url=playlist.artwork)
             await interaction.followup.send(embed=embed)
         else:
             await interaction.followup.send(f"Please provide a valid playlist URL.")
