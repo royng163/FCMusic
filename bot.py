@@ -16,7 +16,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
+    node = wavelink.Node(uri="http://35.197.99.182:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
@@ -106,7 +106,7 @@ async def queue(interaction: Interaction):
     else:
         queue_list = ""
         for i, track in enumerate(vClient.queue[:10]):
-            queue_list += f"{i+1}. [{track}]({track.uri}) - `{datetime.fromtimestamp(track.length/1000).strftime('%Mm%Ss')}`\n"
+            queue_list += f"{i+1}. [{track}]({track.uri}) - `{datetime.fromtimestamp(track.length/1000).strftime('%-Mm%-Ss')}`\n"
         embed = discord.Embed(title="Queue", color=0x22a7f2)
         embed.add_field(name="", value=queue_list, inline=False)
         await interaction.followup.send(embed=embed)
@@ -123,11 +123,10 @@ async def nowplaying(interaction: Interaction):
         await interaction.followup.send("No song is playing.")
         return
     else:
-        track = vClient.queue.current
-        embed=discord.Embed(title="Now Playing", color=0x22a7f2)
-        embed.add_field(name=f"[{track}]({track.uri})",
-                        value=f"`{datetime.fromtimestamp(track.position/1000).strftime('%Mm%Ss')}/{datetime.fromtimestamp(track.length/1000).strftime('%Mm%Ss')}`",
-                        inline=False)
+        track = vClient.current
+        embed = discord.Embed(title="Now Playing", color=0x22a7f2)
+        embed.add_field(name="", value=f"[{track.title}]({track.uri})", inline=False)
+        embed.add_field(name="", value=f"`{datetime.fromtimestamp(vClient.position/1000).strftime('%-Mm%-Ss')}/{datetime.fromtimestamp(track.length/1000).strftime('%-Mm%-Ss')}`", inline=False)
         await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="skip", description="Skip the song")
@@ -176,16 +175,14 @@ async def playlist(interaction: Interaction, url: str):
     try:
         playlist = await wavelink.Playable.search(url)
         if isinstance(playlist, wavelink.Playlist):
-            embed = discord.Embed(title=f"[{playlist.name}]({playlist.url})", color=0x22a7f2)
-            embed.set_thumbnail(url=playlist.artwork)
+            embed = discord.Embed(title=f"{playlist.name}", url=playlist.url, color=0x22a7f2)
+            embed.set_thumbnail(url=playlist.url)
             await interaction.followup.send(embed=embed)
         else:
             await interaction.followup.send(f"Please provide a valid playlist URL.")
     except wavelink.LavalinkLoadException as e:
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
-
-    await interaction.delete_original_message()
 
 @bot.tree.command(name="stop", description="Terminate the player")
 async def stop(interaction: Interaction):
