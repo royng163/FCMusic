@@ -1,4 +1,3 @@
-import asyncio
 from datetime import datetime
 import discord
 from discord.ext import commands
@@ -176,6 +175,8 @@ async def playlist(interaction: Interaction, url: str):
         playlist = await wavelink.Playable.search(url)
         if isinstance(playlist, wavelink.Playlist):
             embed = discord.Embed(title=f"{playlist.name}", url=playlist.url, color=0x22a7f2)
+            embed.add_field(name="", value=f"{playlist.url}", inline=False)
+            embed.add_field(name="", value=f"{playlist.artwork}", inline=False)
             embed.set_thumbnail(url=playlist.artwork)
             await interaction.followup.send(embed=embed)
         else:
@@ -196,8 +197,6 @@ async def stop(interaction: Interaction):
         await vClient.disconnect()
         await interaction.followup.send("Player Terminated.")
 
-async def main():
-    async with bot:
-        await bot.start("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
+    await wavelink.Pool.close() 
 
-asyncio.run(main())
+bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
