@@ -2,6 +2,7 @@ from datetime import datetime
 import discord
 from discord.ext import commands
 from discord import Interaction
+from typing import cast
 import wavelink
 
 intents = discord.Intents.default()
@@ -15,6 +16,9 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
+
+@bot.event
+async def setup_hook():
     node = wavelink.Node(uri="http://35.197.99.182:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
@@ -22,10 +26,22 @@ async def on_ready():
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
 
+@bot.event
+async def on_wavelink_track_exception(payload: wavelink.TrackExceptionEventPayload):
+    print(f"Track exception in {payload.track.title}: {payload.exception}")
+
+@bot.event
+async def on_wavelink_track_stuck(payload: wavelink.TrackStuckEventPayload):
+    print(f"Track stuck in {payload.track.title}")
+
+@bot.event
+async def on_wavelink_inactive_player(player: wavelink.Player):
+    await player.disconnect()
+
 @bot.tree.command(name="play", description="Play the song")
 async def play(interaction: Interaction, url: str=None):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (url is None):
         if (vClient is None):
@@ -42,14 +58,15 @@ async def play(interaction: Interaction, url: str=None):
             await interaction.followup.send("No song is playing.")
             return
 
-    if (interaction.user.voice is None): # check if user is in vc
-        await interaction.followup.send("You are not in a voice channel.")
-        return
     vChannel = interaction.user.voice.channel
 
     if (vClient is None): # check if bot is in vc
-        vClient = await vChannel.connect(cls=wavelink.Player)
-        await interaction.guild.change_voice_state(channel=vChannel, self_deaf=True)
+        try:
+            vClient = await interaction.user.voice.channel.connect(cls=wavelink.Player)
+            await interaction.guild.change_voice_state(channel=vChannel, self_deaf=True)
+        except AttributeError:
+            await interaction.followup.send("Please join a voice channel playing.")
+            return
 
     if (vClient.channel is not vChannel): # check if the bot is in the same voice channel as user
         vClient = await vClient.move_to(vChannel)
@@ -63,20 +80,20 @@ async def play(interaction: Interaction, url: str=None):
             track = tracks[0]
             await vClient.queue.put_wait(track)
             await interaction.followup.send(f"Added `{track}` to the queue.")
-
-        if not vClient.playing:
-            track = vClient.queue.get()
-            await vClient.play(track)
-            vClient.autoplay = wavelink.AutoPlayMode.partial
     except wavelink.LavalinkLoadException as e:
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
+
+    if not vClient.playing:
+        track = vClient.queue.get()
+        vClient.autoplay = wavelink.AutoPlayMode.partial
+        await vClient.play(track, add_history=False)
 
 
 @bot.tree.command(name="pause", description="Pause the song")
 async def pause(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -94,7 +111,7 @@ async def pause(interaction: Interaction):
 @bot.tree.command(name="queue", description="Display the queue")
 async def queue(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -113,7 +130,7 @@ async def queue(interaction: Interaction):
 @bot.tree.command(name="nowplaying", description="Display the current song")
 async def nowplaying(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -131,7 +148,7 @@ async def nowplaying(interaction: Interaction):
 @bot.tree.command(name="skip", description="Skip the song")
 async def skip(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -146,7 +163,7 @@ async def skip(interaction: Interaction):
 @bot.tree.command(name="shuffle", description="Shuffle the queue")
 async def shuffle(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -158,7 +175,7 @@ async def shuffle(interaction: Interaction):
 @bot.tree.command(name="clear", description="Clear the queue")
 async def clear(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("I am not in a voice channel.")
@@ -188,7 +205,7 @@ async def playlist(interaction: Interaction, url: str):
 @bot.tree.command(name="stop", description="Terminate the player")
 async def stop(interaction: Interaction):
     await interaction.response.defer()
-    vClient = interaction.guild.voice_client
+    vClient = cast(wavelink.Player, interaction.guild.voice_client)
 
     if (vClient is None):
         await interaction.followup.send("No active player.")
@@ -196,7 +213,5 @@ async def stop(interaction: Interaction):
     else:
         await vClient.disconnect()
         await interaction.followup.send("Player Terminated.")
-
-    await wavelink.Pool.close() 
 
 bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
