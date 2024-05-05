@@ -50,7 +50,7 @@ async def play(interaction: Interaction, url: str=None):
 
     if (vClient is None): # check if bot is in vc
         try:
-            vClient = await interaction.user.voice.channel.connect(cls=wavelink.Player)
+            vClient = await vChannel.connect(cls=wavelink.Player)
             await interaction.guild.change_voice_state(channel=vChannel, self_deaf=True)
         except AttributeError:
             await interaction.followup.send("Please join a voice channel playing.")
