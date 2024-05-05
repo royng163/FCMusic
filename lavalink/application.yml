@@ -76,7 +76,7 @@ logging:
 
   level:
     root: INFO
-    lavalink: INFO
+    lavalink: DEBUG
 
   request:
     enabled: true
@@ -90,4 +90,4 @@ logging:
   logback:
     rollingpolicy:
       max-file-size: 1GB
-      max-history: 30
+      max-history: 2
