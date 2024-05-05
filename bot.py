@@ -15,7 +15,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    node = wavelink.Node(uri="http://35.197.99.182:2333", password="a16101y")
+    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
