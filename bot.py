@@ -15,23 +15,12 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-
-@bot.event
-async def setup_hook():
     node = wavelink.Node(uri="http://35.197.99.182:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
-
-@bot.event
-async def on_wavelink_track_exception(payload: wavelink.TrackExceptionEventPayload):
-    print(f"Track exception in {payload.track.title}: {payload.exception}")
-
-@bot.event
-async def on_wavelink_track_stuck(payload: wavelink.TrackStuckEventPayload):
-    print(f"Track stuck in {payload.track.title}")
 
 @bot.event
 async def on_wavelink_inactive_player(player: wavelink.Player):
