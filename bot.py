@@ -15,7 +15,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
+    node = wavelink.Node(uri="localhost:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
@@ -127,6 +127,7 @@ async def nowplaying(interaction: Interaction):
         embed = discord.Embed(title="Now Playing", color=0x22a7f2)
         embed.add_field(name="", value=f"[{track.title}]({track.uri})", inline=False)
         embed.add_field(name="", value=f"`{datetime.fromtimestamp(vClient.position/1000).strftime('%-Mm%-Ss')}/{datetime.fromtimestamp(track.length/1000).strftime('%-Mm%-Ss')}`", inline=False)
+        embed.set_thumbnail(url=track.artwork)
         await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="skip", description="Skip the song")
@@ -168,24 +169,6 @@ async def clear(interaction: Interaction):
         vClient.queue.clear()
         await interaction.followup.send("Queue cleared.")
 
-@bot.tree.command(name="playlist", description="Display updated playlist")
-async def playlist(interaction: Interaction, url: str):
-    await interaction.response.defer()
-
-    try:
-        playlist = await wavelink.Playable.search(url)
-        if isinstance(playlist, wavelink.Playlist):
-            embed = discord.Embed(title=f"{playlist.name}", url=playlist.url, color=0x22a7f2)
-            embed.add_field(name="", value=f"{playlist.url}", inline=False)
-            embed.add_field(name="", value=f"{playlist.artwork}", inline=False)
-            embed.set_thumbnail(url=playlist.artwork)
-            await interaction.followup.send(embed=embed)
-        else:
-            await interaction.followup.send(f"Please provide a valid playlist URL.")
-    except wavelink.LavalinkLoadException as e:
-        print(f"{e}")
-        await interaction.followup.send("Failed to load track.")
-
 @bot.tree.command(name="stop", description="Terminate the player")
 async def stop(interaction: Interaction):
     vClient = interaction.guild.voice_client
@@ -197,5 +180,33 @@ async def stop(interaction: Interaction):
     else:
         await vClient.disconnect()
         await interaction.followup.send("Player Terminated.")
+
+@bot.tree.command(name="playlist", description="Display updated playlist")
+async def playlist(interaction: Interaction, url: str, added: int=None):
+    channel = interaction.channel
+    await interaction.response.defer(ephemeral=True)
+
+    try:
+        track = await wavelink.Playable.search(url)
+        if isinstance(track, wavelink.Playlist):
+            # delete old playlist message
+            async for message in channel.history(limit=20):
+                if message.embeds:
+                    for embed in message.embeds:
+                        if embed.url == url:
+                            await message.delete()
+
+            embed = discord.Embed(title=f"{track.name}", url=url, color=0x22a7f2)
+            embed.set_thumbnail(url=track.tracks[0].artwork)
+            if added:
+                embed.add_field(name="New", value=f"`{added}`", inline=True)
+            embed.add_field(name="Command", value=f"`/play url:{url}`", inline=True)
+            await channel.send(embed=embed)
+            await interaction.followup.send(f"Playlist updated.")
+        else:
+            await interaction.followup.send(f"Please provide a valid playlist URL.")
+    except wavelink.LavalinkLoadException as e:
+        print(f"{e}")
+        await interaction.followup.send("Failed to load track.")
 
 bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
