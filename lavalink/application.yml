@@ -5,12 +5,18 @@ server: # REST and WS server
     enabled: false # Whether to enable HTTP/2 support
 plugins:
   youtube:
-    enabled: true
-    clients: ["MUSIC", "ANDROID", "WEB"]
+    enabled: true # Whether this source can be used.
+    allowSearch: true # Whether "ytsearch:" and "ytmsearch:" can be used.
+    # The clients to use for track loading. See below for a list of valid clients.
+    # Clients are queried in the order they are given (so the first client is queried first and so on...)
+    clients:
+      - MUSIC
+      - ANDROID
+      - WEB
 lavalink:
   plugins:
-    - dependency: "com.github.lavalink-devs.lavaplayer-youtube-source:plugin:1.0.5"
-      repository: "https://jitpack.io"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.3.0"
+      snapshot: false
   server:
     password: "a16101y"
     sources:
