@@ -15,26 +15,12 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
+    node = wavelink.Node(uri="http://34.168.70.238:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
-
-@bot.event
-async def on_voice_state_update(member, before, after):
-    if after.channel is None:
-        return
-    vClient = after.channel.guild.voice_client
-
-    if vClient is not None:
-        # puase the music when everyone else leaves the channel
-        if len(after.channel.members) == 1:
-            await vClient.pause(True)
-        # resume the music when someone joins back
-        elif len(before.channel.members) == 1 and len(after.channel.members) == 2:
-            await vClient.pause(False)
 
 @bot.tree.command(name="play", description="Play the song")
 async def play(interaction: Interaction, url: str=None):
@@ -223,4 +209,4 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
 
-bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
+bot.run("MTIzNzc3MDQ1NjEyMDAzMzMyMA.GdfDiW.QUMT44eMiGsgtE-gAochEFgSL6Zgm2RHa2zUoo")
