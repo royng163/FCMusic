@@ -24,6 +24,8 @@ async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
+    if after.channel is None:
+        return
     vClient = after.channel.guild.voice_client
 
     if vClient is not None:
