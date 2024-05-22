@@ -15,7 +15,7 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    node = wavelink.Node(uri="http://34.168.70.238:2333", password="a16101y")
+    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
@@ -209,4 +209,4 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
 
-bot.run("MTIzNzc3MDQ1NjEyMDAzMzMyMA.GdfDiW.QUMT44eMiGsgtE-gAochEFgSL6Zgm2RHa2zUoo")
+bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
