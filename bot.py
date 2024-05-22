@@ -22,6 +22,18 @@ async def on_ready():
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
 
+@bot.event
+async def on_voice_state_update(member, before, after):
+    vClient = after.channel.guild.voice_client
+
+    if vClient is not None:
+        # puase the music when everyone else leaves the channel
+        if len(after.channel.members) == 1:
+            await vClient.pause(True)
+        # resume the music when someone joins back
+        elif len(before.channel.members) == 1 and len(after.channel.members) == 2:
+            await vClient.pause(False)
+
 @bot.tree.command(name="play", description="Play the song")
 async def play(interaction: Interaction, url: str=None):
     vClient = interaction.guild.voice_client
@@ -190,7 +202,7 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         track = await wavelink.Playable.search(url)
         if isinstance(track, wavelink.Playlist):
             # delete old playlist message
-            async for message in channel.history(limit=20):
+            async for message in channel.history(limit=25):
                 if message.embeds:
                     for embed in message.embeds:
                         if embed.url == url:
