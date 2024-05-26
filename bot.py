@@ -236,4 +236,4 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
 
-bot.run("MTIzNzc3MDQ1NjEyMDAzMzMyMA.GdfDiW.QUMT44eMiGsgtE-gAochEFgSL6Zgm2RHa2zUoo")
+bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
