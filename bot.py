@@ -1,6 +1,7 @@
 from datetime import datetime
 import discord
 from discord.ext import commands
+from discord import app_commands
 from discord import Interaction
 import wavelink
 
@@ -111,6 +112,29 @@ async def queue(interaction: Interaction):
         embed.add_field(name="", value=queue_list, inline=False)
         await interaction.followup.send(embed=embed)
 
+@bot.tree.command(name="insert", description="Insert song to the front of the queue")
+async def insert(interaction: Interaction, url: str):
+    vClient = interaction.guild.voice_client
+    await interaction.response.defer()
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel.")
+        return
+
+    try:
+        tracks = await wavelink.Playable.search(url)
+        if isinstance(tracks, wavelink.Playlist):
+            for index, track in enumerate(tracks):
+                vClient.queue.put_at(index, track)
+            await interaction.followup.send(f"Inserted {len(tracks)} songs from **`{tracks.name}`** to the front of the queue.")
+        else:
+            track = tracks[0]
+            vClient.queue.put_at(0, track)
+            await interaction.followup.send(f"Inserted `{track}` to the queue.")
+    except wavelink.LavalinkLoadException as e:
+        print(f"{e}")
+        await interaction.followup.send("Failed to load track.")
+
 @bot.tree.command(name="nowplaying", description="Display the current song")
 async def nowplaying(interaction: Interaction):
     vClient = interaction.guild.voice_client
@@ -131,7 +155,8 @@ async def nowplaying(interaction: Interaction):
         await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="skip", description="Skip the song")
-async def skip(interaction: Interaction):
+@app_commands.describe(to="Skip to this index in queue")
+async def skip(interaction: Interaction, to: int=1):
     vClient = interaction.guild.voice_client
     await interaction.response.defer()
 
@@ -139,8 +164,10 @@ async def skip(interaction: Interaction):
         await interaction.followup.send("I am not in a voice channel.")
         return
     if (vClient.playing):
+        for _ in range(to-1):
+            vClient.queue.delete(0)
         await vClient.skip()
-        await interaction.followup.send("Song skipped.")
+        await interaction.followup.send(f"Skipped {to} songs.")
         return
     else:
         await interaction.followup.send("No song is playing.")
@@ -209,4 +236,4 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
 
-bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
+bot.run("MTIzNzc3MDQ1NjEyMDAzMzMyMA.GdfDiW.QUMT44eMiGsgtE-gAochEFgSL6Zgm2RHa2zUoo")

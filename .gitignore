@@ -1,2 +1,7 @@
 /Dockerfile
 /*.dockerignore
+/.devcontainer
+/.github
+/discord
+/lavalink/logs
+/lavalink/plugins
