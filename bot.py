@@ -16,12 +16,20 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
+    await connect_to_lavalink()
+
+async def connect_to_lavalink():
     node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
     await wavelink.Pool.connect(nodes=[node], client=bot)
 
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
+
+@bot.event
+async def on_wavelink_node_disconnected(payload: wavelink.NodeDisconnectedEventPayload):
+    print(f"Node {payload.node.identifier} disconnected! Attempting to reconnect...")
+    await connect_to_lavalink()
 
 @bot.tree.command(name="play", description="Play the song")
 async def play(interaction: Interaction, url: str=None):
