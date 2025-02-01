@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv, find_dotenv
 from datetime import datetime
 import discord
 from discord.ext import commands
@@ -5,9 +7,19 @@ from discord import app_commands
 from discord import Interaction
 import wavelink
 
+""" Set up environment variables """
+# Load default environment variables
+load_dotenv(find_dotenv())
+# Override with development environment variables
+load_dotenv(".env.dev", override=True)
+# Retrieve the environment variables
+LAVALINK_URL = os.getenv("LAVALINK_URL")
+LAVALINK_PW = os.getenv("LAVALINK_PW")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+
+""" Set up the bot """
 intents = discord.Intents.default()
 intents.message_content = True
-
 bot = commands.Bot(command_prefix='!',intents=intents)
 
 @bot.event
@@ -16,21 +28,14 @@ async def on_ready():
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name="Music"))
     synced = await bot.tree.sync()
     print(f'Synced {len(synced)} commands')
-    await connect_to_lavalink()
-
-async def connect_to_lavalink():
-    node = wavelink.Node(uri="http://localhost:2333", password="a16101y")
-    await wavelink.Pool.connect(nodes=[node], client=bot)
+    node = [wavelink.Node(uri=LAVALINK_URL, password=LAVALINK_PW)]
+    await wavelink.Pool.connect(nodes=node, client=bot)
 
 @bot.event
 async def on_wavelink_node_ready(payload: wavelink.NodeReadyEventPayload):
     print(f"Node {payload.node.identifier} is ready!")
 
-@bot.event
-async def on_wavelink_node_disconnected(payload: wavelink.NodeDisconnectedEventPayload):
-    print(f"Node {payload.node.identifier} disconnected! Attempting to reconnect...")
-    await connect_to_lavalink()
-
+""" Bot Commands """
 @bot.tree.command(name="play", description="Play the song")
 async def play(interaction: Interaction, url: str=None):
     vClient = interaction.guild.voice_client
@@ -80,6 +85,7 @@ async def play(interaction: Interaction, url: str=None):
     if not vClient.playing:
         track = vClient.queue.get()
         vClient.autoplay = wavelink.AutoPlayMode.partial
+        vClient.inactive_timeout = 0
         await vClient.play(track, add_history=False)
 
 
@@ -192,6 +198,52 @@ async def shuffle(interaction: Interaction):
         vClient.queue.shuffle()
         await interaction.followup.send("Queue shuffled.")
 
+@bot.tree.command(name="loop", description="Toggle loop mode")
+@app_commands.describe(option="Loop the current song or the entire queue")
+@app_commands.choices(option=[
+    app_commands.Choice(name="Song", value="song"),
+    app_commands.Choice(name="Queue", value="queue")
+])
+async def loop(interaction: Interaction, option: str):
+    vClient = interaction.guild.voice_client
+    await interaction.response.defer()
+
+    if vClient is None:
+        await interaction.followup.send("I am not in a voice channel.")
+        return
+
+    match option:
+        case None:
+            if vClient.queue.mode == wavelink.QueueMode.normal:
+                await interaction.followup.send("Please specify an loop option.")
+            else:
+                vClient.queue.mode = wavelink.QueueMode.normal
+                await interaction.followup.send("Loop mode disabled.")
+        case "song":
+            vClient.queue.mode = wavelink.QueueMode.loop
+            await interaction.followup.send(f"Song loop enabled.")
+        case "queue":
+            vClient.queue.mode = wavelink.QueueMode.loop_all
+            await interaction.followup.send(f"Queue loop enabled.")
+
+@bot.tree.command(name="remove", description="Remove song from queue")
+async def remove(interaction: Interaction, index: int):
+    vClient = interaction.guild.voice_client
+    await interaction.response.defer()
+
+    if (vClient is None):
+        await interaction.followup.send("I am not in a voice channel.")
+        return
+    if (vClient.queue.is_empty):
+        await interaction.followup.send("Queue is empty.")
+        return
+    if (index < 1 or index > len(vClient.queue)):
+        await interaction.followup.send("Invalid index.")
+        return
+    else:
+        vClient.queue.delete(index-1)
+        await interaction.followup.send(f"Removed song `{index}` from the queue.")
+
 @bot.tree.command(name="clear", description="Clear the queue")
 async def clear(interaction: Interaction):
     vClient = interaction.guild.voice_client
@@ -244,4 +296,4 @@ async def playlist(interaction: Interaction, url: str, added: int=None):
         print(f"{e}")
         await interaction.followup.send("Failed to load track.")
 
-bot.run("NzcxNjU1Njk5MDQ1Njc5MTI0.GtxmLZ.ZdtrBkyjpPBjK1qkxEOlSBvNy37XbdKlR6fTrI")
+bot.run(BOT_TOKEN)

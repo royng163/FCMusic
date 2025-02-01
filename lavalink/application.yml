@@ -18,7 +18,7 @@ plugins:
       - WEBEMBEDDED
 lavalink:
   plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.8.3"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
       snapshot: false
   server:
     password: "a16101y"
@@ -47,25 +47,25 @@ lavalink:
     resamplingQuality: LOW # Quality of resampling operations. Valid values are LOW, MEDIUM and HIGH, where HIGH uses the most CPU.
     trackStuckThresholdMs: 10000 # The threshold for how long a track can be stuck. A track is stuck if does not return any audio data.
     useSeekGhosting: true # Seek ghosting is the effect where whilst a seek is in progress, the audio buffer is read from until empty, or until seek is ready.
-    youtubePlaylistLoadLimit: 10 # Number of pages at 100 each
+    youtubePlaylistLoadLimit: 8 # Number of pages at 100 each
     playerUpdateInterval: 5 # How frequently to send player updates to clients, in seconds
     youtubeSearchEnabled: true
     soundcloudSearchEnabled: true
     gc-warnings: true
     #ratelimit:
-      #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
-      #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
-      #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
-      #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
-      #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
+    #ipBlocks: ["1.0.0.0/8", "..."] # list of ip blocks
+    #excludedIps: ["...", "..."] # ips which should be explicit excluded from usage by lavalink
+    #strategy: "RotateOnBan" # RotateOnBan | LoadBalance | NanoSwitch | RotatingNanoSwitch
+    #searchTriggersFail: true # Whether a search 429 should trigger marking the ip as failing
+    #retryLimit: -1 # -1 = use default lavaplayer value | 0 = infinity | >0 = retry will happen this numbers times
     #youtubeConfig: # Required for avoiding all age restrictions by YouTube, some restricted videos still can be played without.
-      #email: "" # Email of Google account
-      #password: "" # Password of Google account
+    #email: "" # Email of Google account
+    #password: "" # Password of Google account
     #httpConfig: # Useful for blocking bad-actors from ip-grabbing your music node and attacking it, this way only the http proxy will be attacked
-      #proxyHost: "localhost" # Hostname of the proxy, (ip or domain)
-      #proxyPort: 3128 # Proxy port, 3128 is the default for squidProxy
-      #proxyUser: "" # Optional user for basic authentication fields, leave blank if you don't use basic auth
-      #proxyPassword: "" # Password for basic authentication
+    #proxyHost: "localhost" # Hostname of the proxy, (ip or domain)
+    #proxyPort: 3128 # Proxy port, 3128 is the default for squidProxy
+    #proxyUser: "" # Optional user for basic authentication fields, leave blank if you don't use basic auth
+    #proxyPassword: "" # Password for basic authentication
 
 metrics:
   prometheus:
@@ -94,7 +94,6 @@ logging:
     includeQueryString: true
     includePayload: true
     maxPayloadLength: 10000
-
 
   logback:
     rollingpolicy:
