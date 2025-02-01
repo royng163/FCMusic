@@ -5,3 +5,4 @@
 /discord
 /lavalink/logs
 /lavalink/plugins
+.env*
