@@ -201,10 +201,10 @@ async def shuffle(interaction: Interaction):
 @bot.tree.command(name="loop", description="Toggle loop mode")
 @app_commands.describe(option="Loop the current song or the entire queue")
 @app_commands.choices(option=[
-    app_commands.Choice(name="Song", value="song"),
-    app_commands.Choice(name="Queue", value="queue")
+    app_commands.Choice(name="Loop song", value="song"),
+    app_commands.Choice(name="Loop queue", value="queue")
 ])
-async def loop(interaction: Interaction, option: str):
+async def loop(interaction: Interaction, option: str="normal"):
     vClient = interaction.guild.voice_client
     await interaction.response.defer()
 
@@ -213,7 +213,7 @@ async def loop(interaction: Interaction, option: str):
         return
 
     match option:
-        case None:
+        case "normal":
             if vClient.queue.mode == wavelink.QueueMode.normal:
                 await interaction.followup.send("Please specify an loop option.")
             else:
