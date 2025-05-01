@@ -6,3 +6,4 @@
 /lavalink/logs
 /lavalink/plugins
 .env*
+.prettierignore

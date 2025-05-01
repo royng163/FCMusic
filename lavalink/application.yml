@@ -18,7 +18,7 @@ plugins:
       - WEBEMBEDDED
 lavalink:
   plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.13.0"
       snapshot: false
   server:
     password: "a16101y"

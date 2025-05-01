@@ -1,5 +1,5 @@
 # FCMusic
-A Discord music bot built with Python and the [Wavelink](https://github.com/PythonistaGuild/Wavelink) library capable of streaming music from different platforms.
+A Discord music bot built with Python and the [Lavalink.py](https://github.com/devoxin/lavalink.py) library capable of streaming music from different platforms.
 
 ## Features
 #### Player Control:  
