@@ -178,7 +178,8 @@ async def play(interaction: Interaction, query: str=None):
                 return
 
         # --- Play Logic ---
-        await interaction.user.voice.channel.connect(cls=LavalinkClient, self_deaf=True)
+        if not interaction.guild.voice_client:
+            await interaction.user.voice.channel.connect(cls=LavalinkClient, self_deaf=True)
         # Search for the tracks using the provided query
         result = await player.node.get_tracks(query)
         match(result.load_type):
