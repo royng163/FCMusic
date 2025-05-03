@@ -133,13 +133,16 @@ async def on_node_disconnect(event: lavalink.events.NodeDisconnectedEvent):
 async def ensure_voice(interaction: Interaction, should_connect: bool):
     player = bot.lavalink.player_manager.create(interaction.guild.id)
 
-    if not interaction.user.voice or not interaction.user.voice.channel:
+    if (not interaction.user.voice or not interaction.user.voice.channel) and should_connect:
         raise app_commands.AppCommandError('Please join a voice channel first.')
+
+    if not should_connect:
+        return player
 
     voice_channel = interaction.user.voice.channel
 
     if not interaction.guild.voice_client:
-        if not should_connect:
+        if should_connect:
             raise app_commands.AppCommandError("I am not connected to a voice channel.")
 
         permissions = voice_channel.permissions_for(interaction.guild.me)
