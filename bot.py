@@ -130,19 +130,19 @@ async def on_node_disconnect(event: lavalink.events.NodeDisconnectedEvent):
     print(f"Lavalink Node '{event.node.name}' disconnected! Reason: {event.reason}, Code: {event.code}")
 
 # Helper function to create a player and ensure the bot is connected to a voice channel
-async def ensure_voice(interaction: Interaction, should_connect: bool):
+async def ensure_voice(interaction: Interaction, user_should_connect: bool, bot_should_connect: bool = True):
     player = bot.lavalink.player_manager.create(interaction.guild.id)
 
-    if (not interaction.user.voice or not interaction.user.voice.channel) and should_connect:
+    if (not interaction.user.voice or not interaction.user.voice.channel) and user_should_connect:
         raise app_commands.AppCommandError('Please join a voice channel first.')
 
-    if not should_connect:
+    if not user_should_connect:
         return player
 
     voice_channel = interaction.user.voice.channel
 
     if not interaction.guild.voice_client:
-        if should_connect:
+        if bot_should_connect:
             raise app_commands.AppCommandError("I am not connected to a voice channel.")
 
         permissions = voice_channel.permissions_for(interaction.guild.me)
@@ -165,10 +165,10 @@ async def play(interaction: Interaction, query: str=None):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
 
         # --- Resume Logic ---
         if query is None:
+            player = await ensure_voice(interaction, user_should_connect=True)
             if not player.paused:
                 await interaction.followup.send("Song is already playing.")
                 return
@@ -179,6 +179,8 @@ async def play(interaction: Interaction, query: str=None):
             else:
                 await interaction.followup.send("No song is playing.")
                 return
+            
+        player = await ensure_voice(interaction, user_should_connect=True, bot_should_connect=False)
 
         # --- Play Logic ---
         if not interaction.guild.voice_client:
@@ -218,7 +220,7 @@ async def pause(interaction: Interaction):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         if player.paused:
             await interaction.followup.send("Song is already paused.")
@@ -239,7 +241,7 @@ async def pause(interaction: Interaction):
 async def queue(interaction: Interaction):
     await interaction.response.defer()
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         if not player.queue:
             await interaction.followup.send("The queue is empty.")
@@ -266,7 +268,7 @@ async def insert(interaction: Interaction, query: str):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         # Search for the tracks using the provided query
         result = await player.node.get_tracks(query)
@@ -299,7 +301,7 @@ async def nowplaying(interaction: Interaction):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         if not player.is_playing or player.current is None:
             await interaction.followup.send("No song is playing.")
@@ -332,7 +334,7 @@ async def skip(interaction: Interaction, to: int=1):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
         
         if not player.is_playing:
             await interaction.followup.send("No song is playing.")
@@ -368,7 +370,7 @@ async def shuffle(interaction: Interaction):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
         
         # Toggle shuffle state
         player.shuffle = not player.shuffle
@@ -394,7 +396,7 @@ async def loop(interaction: Interaction, option: str="normal"):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         match option:
             case "normal":
@@ -421,7 +423,7 @@ async def remove(interaction: Interaction, index: int):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         if not player.queue:
             await interaction.followup.send("Queue is empty.")
@@ -443,7 +445,7 @@ async def clear(interaction: Interaction):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
         
         if not player.queue:
             await interaction.followup.send("The queue is already empty.")
@@ -462,7 +464,7 @@ async def stop(interaction: Interaction):
     await interaction.response.defer()
 
     try:
-        player = await ensure_voice(interaction, should_connect=True)
+        player = await ensure_voice(interaction, user_should_connect=True)
 
         player.queue.clear()
         await player.stop()
@@ -480,7 +482,7 @@ async def stop(interaction: Interaction):
 async def playlist(interaction: Interaction, url: str, added: int=None):
     channel = interaction.channel
     await interaction.response.defer(ephemeral=True)
-    player = await ensure_voice(interaction, should_connect=False)
+    player = await ensure_voice(interaction, user_should_connect=False)
 
     try:
         # Search for the tracks using the provided query
